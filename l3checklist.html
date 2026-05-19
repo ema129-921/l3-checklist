@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L3 記事セルフチェックリスト</title>
+  <style>
+    /* ── CSS変数 ── */
+    :root {
+      --bg: #f5f5f0;
+      --white: #ffffff;
+      --primary: #1d9e75;
+      --primary-light: #e8f7f2;
+      --text: #333333;
+      --muted: #888888;
+      --border: #e0e0e0;
+      --ok-bg: #eaf7f1;
+      --na-bg: #f2f2f2;
+      --red: #e53e3e;
+    }
+
+    /* ── リセット ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    .hidden { display: none !important; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── ヘッダー ── */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .header-title { font-size: 18px; font-weight: 700; }
+    .header-title span { color: var(--primary); }
+
+    .btn-admin {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-admin:hover { background: var(--bg); }
+    .btn-admin.active { background: #fff3e0; border-color: #f59e0b; color: #d97706; }
+
+    /* ── メインコンテンツ ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── カード ── */
+    .card {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 14px;
+    }
+
+    /* ── 記事情報フォーム ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .info-grid .full { grid-column: 1 / -1; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--white);
+      color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .form-group input:focus,
+    .form-group select:focus { outline: none; border-color: var(--primary); }
+
+    /* ── 進捗バー ── */
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .progress-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .progress-stats { display: flex; align-items: center; gap: 8px; }
+    .progress-count { font-size: 14px; font-weight: 700; }
+    .badge-rem {
+      background: #fee2e2;
+      color: #dc2626;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .progress-track {
+      background: #e5e7eb;
+      border-radius: 100px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 100px;
+      transition: width 0.35s ease;
+    }
+
+    /* ── チェックリスト ── */
+    .checklist-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+    /* カテゴリブロック */
+    .cat-block {
+      background: var(--white);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .cat-header {
+      display: flex;
+      align-items: center;
+      padding: 13px 16px;
+      cursor: pointer;
+      gap: 10px;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .cat-header:hover { background: var(--bg); }
+    .cat-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+      flex-shrink: 0;
+    }
+    .cat-name { font-size: 15px; font-weight: 700; flex: 1; }
+    .cat-prog { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+    .cat-arrow {
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .cat-arrow.open { transform: rotate(180deg); }
+    .cat-items { border-top: 1px solid var(--border); }
+
+    /* 項目行 */
+    .item-row {
+      padding: 11px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row.ok { background: var(--ok-bg); }
+    .item-row.na { background: var(--na-bg); }
+    .item-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 38px;
+      flex-shrink: 0;
+    }
+    .item-text { flex: 1; font-size: 14px; line-height: 1.55; }
+    .item-row.na .item-text { color: var(--muted); text-decoration: line-through; }
+    .item-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .ok-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .ok-label input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+    .na-btn {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .na-btn:hover { background: #ebebeb; }
+    .na-btn.active { background: #ddd; border-color: #aaa; color: #555; font-weight: 700; }
+
+    /* 申し送りメモ */
+    .item-memo {
+      margin-top: 8px;
+      margin-left: 50px;
+    }
+    .memo-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .item-memo textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #b2dfcc;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 54px;
+      background: #f8fffc;
+      color: var(--text);
+    }
+    .item-memo textarea:focus { outline: none; border-color: var(--primary); }
+
+    /* 管理者用インラインボタン */
+    .item-admin-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 7px;
+      margin-left: 50px;
+    }
+
+    /* ── 送信ボタン ── */
+    .submit-wrap { text-align: center; margin-top: 28px; }
+    .btn-submit {
+      padding: 14px 52px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: not-allowed;
+      background: #d1d5db;
+      color: #9ca3af;
+      font-family: inherit;
+      transition: all 0.25s;
+    }
+    .btn-submit.ready {
+      background: var(--primary);
+      color: var(--white);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(29,158,117,0.3);
+    }
+    .btn-submit.ready:hover {
+      background: #178a65;
+      box-shadow: 0 6px 18px rgba(29,158,117,0.4);
+    }
+
+    /* ── モーダル ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.42);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal {
+      background: var(--white);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-lg { max-width: 680px; }
+    .modal-head {
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 4px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--bg); }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+
+    /* ── 管理者タブ ── */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 16px;
+      gap: 0;
+    }
+    .tab-btn {
+      padding: 8px 14px;
+      border: none;
+      background: none;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* ── リスト管理共通 ── */
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f3f3f3;
+    }
+    .list-row:last-child { border-bottom: none; }
+    .list-row-text { flex: 1; font-size: 14px; }
+
+    .add-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .add-group input, .add-group select {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .add-group input:focus, .add-group select:focus { outline: none; border-color: var(--primary); }
+
+    /* ボタン類 */
+    .btn-primary {
+      padding: 8px 16px;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #178a65; }
+
+    .btn-sm {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { background: var(--bg); }
+    .btn-sm.danger { color: var(--red); border-color: #fca5a5; }
+    .btn-sm.danger:hover { background: #fee2e2; }
+    .btn-sm.warn { color: #d97706; border-color: #fcd34d; }
+    .btn-sm.warn:hover { background: #fffbeb; }
+
+    /* ── ログインフォーム ── */
+    .login-form { display: flex; flex-direction: column; gap: 12px; }
+    .login-form input {
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .login-form input:focus { outline: none; border-color: var(--primary); }
+    .login-error { color: var(--red); font-size: 13px; text-align: center; }
+    .btn-login {
+      padding: 11px;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-login:hover { background: #178a65; }
+
+    /* ── カテゴリ追加フォーム ── */
+    .cat-add-form {
+      background: #f9f9f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .cat-add-form .form-title { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+    .cat-add-grid {
+      display: grid;
+      grid-template-columns: 72px 1fr 100px auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .cat-add-grid input[type="text"],
+    .cat-add-grid input[type="color"] {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      width: 100%;
+    }
+    .cat-add-grid input[type="color"] { height: 34px; padding: 3px 5px; cursor: pointer; }
+
+    /* ── 履歴カード ── */
+    .history-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .history-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .history-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+    .history-memo {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #f8fffc;
+      border: 1px solid #b2dfcc;
+      border-radius: 6px;
+    }
+    .history-memo-title { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .history-memo-item { font-size: 12px; margin-bottom: 2px; }
+
+    /* ── トースト通知 ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 400;
+      transform: translateY(70px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── レスポンシブ ── */
+    @media (max-width: 580px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .info-grid .full { grid-column: 1; }
+      .cat-add-grid { grid-template-columns: 1fr 1fr; }
+      .header-title { font-size: 14px; }
+      .item-text { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     ヘッダー
+════════════════════════════════════════ -->
+<header>
+  <div class="header-title"><span>L3</span> 記事セルフチェックリスト</div>
+  <button class="btn-admin" id="adminBtn" onclick="openAdmin()">⚙ 管理者</button>
+</header>
+
+<!-- ════════════════════════════════════════
+     メインコンテンツ
+════════════════════════════════════════ -->
+<main>
+
+  <!-- 記事情報 -->
+  <div class="card">
+    <div class="card-title">記事情報</div>
+    <div class="info-grid">
+      <div class="form-group full">
+        <label>記事タイトル</label>
+        <input type="text" id="fTitle" placeholder="記事タイトルを入力" oninput="saveArticleInfo()">
+      </div>
+      <div class="form-group">
+        <label>執筆者</label>
+        <select id="fAuthor" onchange="saveArticleInfo()">
+          <option value="">— 選択してください —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>執筆日</label>
+        <input type="date" id="fDate" oninput="saveArticleInfo()">
+      </div>
+      <div class="form-group full">
+        <label>記事URL</label>
+        <input type="url" id="fUrl" placeholder="https://..." oninput="saveArticleInfo()">
+      </div>
+    </div>
+  </div>
+
+  <!-- 進捗バー -->
+  <div class="card">
+    <div class="progress-header">
+      <span class="progress-label">進捗</span>
+      <div class="progress-stats">
+        <span class="progress-count" id="progCount">0/0</span>
+        <span class="badge-rem" id="progRem">残り0件</span>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- チェックリスト -->
+  <div class="checklist-wrap" id="checklistWrap"></div>
+
+  <!-- 送信ボタン -->
+  <div class="submit-wrap">
+    <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">レビュワーに提出する</button>
+  </div>
+
+</main>
+
+<!-- ════════════════════════════════════════
+     ログインモーダル
+════════════════════════════════════════ -->
+<div class="overlay hidden" id="loginOverlay">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head">
+      <span class="modal-title">⚙ 管理者ログイン</span>
+      <button class="modal-close" onclick="closeLogin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="login-form">
+        <input type="password" id="pwInput" placeholder="パスワードを入力"
+               onkeydown="if(event.key==='Enter') tryLogin()">
+        <div class="login-error hidden" id="loginErr">パスワードが違います</div>
+        <button class="btn-login" onclick="tryLogin()">ログイン</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     管理者パネルモーダル
+════════════════════════════════════════ -->
+<div class="overlay hidden" id="adminOverlay">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <span class="modal-title">⚙ 管理者設定</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-sm warn" onclick="doLogout()">ログアウト</button>
+        <button class="modal-close" onclick="closeAdmin()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab-btn active" id="tb-authors" onclick="switchTab('authors')">執筆者</button>
+        <button class="tab-btn" id="tb-categories" onclick="switchTab('categories')">カテゴリ</button>
+        <button class="tab-btn" id="tb-items" onclick="switchTab('items')">チェック項目</button>
+        <button class="tab-btn" id="tb-history" onclick="switchTab('history')">提出履歴</button>
+        <button class="tab-btn" id="tb-settings" onclick="switchTab('settings')">⚙ 設定</button>
+      </div>
+      <div id="tc-authors"></div>
+      <div id="tc-categories" class="hidden"></div>
+      <div id="tc-items" class="hidden"></div>
+      <div id="tc-history" class="hidden"></div>
+      <div id="tc-settings" class="hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════
+     JavaScript
+════════════════════════════════════════ -->
+<script>
+/* Google Apps Script URL は管理者パネルの「⚙ 設定」タブから入力・保存できる */
+let SCRIPT_URL = localStorage.getItem('l3_scriptUrl') || '';
+
+/* ──────────────────────────────────────────
+   定数・デフォルト値
+────────────────────────────────────────── */
+const ADMIN_PW = 'l3admin';
+
+const SK = {
+  authors:     'l3_authors',
+  categories:  'l3_categories',
+  items:       'l3_items',
+  checkStates: 'l3_checkStates',
+  memos:       'l3_memos',
+  articleInfo: 'l3_articleInfo',
+  history:     'l3_history',
+};
+
+const DEF_AUTHORS = ['なおと','屈辱','ほのみ','凛らん','えま','ゆうき','めいりん'];
+
+const DEF_CATEGORIES = [
+  { id:'A', name:'構成',           color:'#B5D4F4' },
+  { id:'B', name:'表記ルール',     color:'#CED0F6' },
+  { id:'C', name:'文章品質',       color:'#9FE1CB' },
+  { id:'D', name:'コンプライアンス', color:'#F5C4B3' },
+  { id:'E', name:'ファクトチェック', color:'#FAC775' },
+  { id:'F', name:'SEO',            color:'#C0DD97' },
+  { id:'G', name:'提出前作業',     color:'#D3D1C7' },
+];
+
+const DEF_ITEMS = [
+  { id:'A-01', catId:'A', text:'関連記事リンクが1〜2個、適切な位置に挿入されているか' },
+  { id:'A-02', catId:'A', text:'スマホ1スクロールごとに画像・リスト・ブロックが挿入されているか' },
+  { id:'A-03', catId:'A', text:'見出し・箇条書き・太字を活用し、重要ポイントが目に入るか' },
+  { id:'A-04', catId:'A', text:'見出しと本文の内容が一致しているか' },
+  { id:'A-05', catId:'A', text:'見出し階層がH2→H3→H4と順序よく設定されているか（H2→H4への飛びなし）' },
+  { id:'B-01', catId:'B', text:'専門用語に括弧書きまたはアコーディオンで補足があるか' },
+  { id:'B-02', catId:'B', text:'記事内の同一単語の表記が統一されているか' },
+  { id:'C-01', catId:'C', text:'LightTHREEとして中立メディアの立場を保てているか（運営・店舗視点で語っていない）' },
+  { id:'C-02', catId:'C', text:'主観と客観が区別されているか（事実は断定、主観は「〜でしょう」等の表現）' },
+  { id:'C-03', catId:'C', text:'冗長表現・意味の重複がないか（「まず最初に」など）' },
+  { id:'C-04', catId:'C', text:'断定・命令表現を使っていないか（「〜しましょう」「必ず」「絶対」など）' },
+  { id:'D-01', catId:'D', text:'景品表示法NGワード・賭博連想NGワード・断定NGワード・主観NGワードを使用していないか' },
+  { id:'D-02', catId:'D', text:'他店舗・他イベントへのネガティブな主観評価がないか' },
+  { id:'E-01', catId:'E', text:'ソースURL・スクショが挿入または添付されているか（キャプションや文章など）' },
+  { id:'E-02', catId:'E', text:'数値・日程・金額・人名・スポンサー名の正式表記を一次情報で確認したか' },
+  { id:'E-03', catId:'E', text:'一次情報がない内容は伝聞表現（「〜とされる」「〜との情報がある」）にしているか' },
+  { id:'E-04', catId:'E', text:'今後変更の可能性がある情報に時点表記が入っているか' },
+  { id:'F-01', catId:'F', text:'最初のH2に対策KWが含まれているか' },
+  { id:'F-02', catId:'F', text:'対策KWが完全一致かつ単語間が近い（助詞一つまでが理想）状態で使用されているか' },
+  { id:'F-03', catId:'F', text:'画像の代替テキストにKWを含む文章が記入されているか' },
+  { id:'G-01', catId:'G', text:'WordPressの設定が完了しているか（アイキャッチ画像1200×675px・og:image・タイトルタグ・ディスクリプション・スラッグ・カテゴリー・執筆者）' },
+  { id:'G-02', catId:'G', text:'AIによる文章・ガイドライン適合チェックを実施したか' },
+  { id:'G-03', catId:'G', text:'AIによるチェックの後、目視で文章を確認したか' },
+  { id:'G-04', catId:'G', text:'目視でスマホビューの調整をしたか' },
+  { id:'G-05', catId:'G', text:'内部リンク・外部リンクのアンカーテキスト・新規タブ設定が適切か' },
+];
+
+/* ──────────────────────────────────────────
+   アプリ状態
+────────────────────────────────────────── */
+const S = {
+  authors:     [],
+  categories:  [],
+  items:       [],
+  checkStates: {},  // { itemId: 'ok' | 'na' }
+  memos:       {},  // { itemId: string }
+  articleInfo: { title:'', author:'', date:'', url:'' },
+  openCats:    new Set(),  // 開いているカテゴリIDのセット（非永続）
+  isAdmin:     false,
+  activeTab:   'authors',
+};
+
+/* ──────────────────────────────────────────
+   永続化ヘルパー
+────────────────────────────────────────── */
+function lsGet(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function saveAuthors()     { lsSet(SK.authors,     S.authors);    pushConfigToServer(); }
+function saveCategories()  { lsSet(SK.categories,  S.categories); pushConfigToServer(); }
+function saveItems()       { lsSet(SK.items,        S.items);      pushConfigToServer(); }
+function saveCheckStates() { lsSet(SK.checkStates,  S.checkStates); }
+function saveMemos()       { lsSet(SK.memos,        S.memos); }
+
+/* 記事情報：フォームからstateへ読み取って保存 */
+function saveArticleInfo() {
+  S.articleInfo = {
+    title:  document.getElementById('fTitle').value,
+    author: document.getElementById('fAuthor').value,
+    date:   document.getElementById('fDate').value,
+    url:    document.getElementById('fUrl').value,
+  };
+  lsSet(SK.articleInfo, S.articleInfo);
+}
+
+/* ──────────────────────────────────────────
+   初期化
+────────────────────────────────────────── */
+function initState() {
+  S.authors    = lsGet(SK.authors,     DEF_AUTHORS);
+  S.categories = lsGet(SK.categories,  DEF_CATEGORIES);
+  S.items      = lsGet(SK.items,       DEF_ITEMS);
+  S.checkStates= lsGet(SK.checkStates, {});
+  S.memos      = lsGet(SK.memos,       {});
+  S.articleInfo= lsGet(SK.articleInfo, { title:'', author:'', date:'', url:'' });
+
+  // デフォルト全カテゴリ展開
+  S.categories.forEach(c => S.openCats.add(c.id));
+}
+
+/* ──────────────────────────────────────────
+   進捗計算
+────────────────────────────────────────── */
+function calcProgress() {
+  const total = S.items.length;
+  const done  = S.items.filter(i => S.checkStates[i.id] === 'ok' || S.checkStates[i.id] === 'na').length;
+  return { total, done, remaining: total - done, pct: total ? Math.round(done/total*100) : 0 };
+}
+
+function isAllDone() {
+  const { total, done } = calcProgress();
+  return total > 0 && done === total;
+}
+
+/* ──────────────────────────────────────────
+   レンダリング
+────────────────────────────────────────── */
+function render() {
+  renderArticleForm();
+  renderProgress();
+  renderChecklist();
+  renderSubmitBtn();
+}
+
+/* 記事情報フォーム */
+function renderArticleForm() {
+  const sel = document.getElementById('fAuthor');
+  const cur = S.articleInfo.author;
+  sel.innerHTML = '<option value="">— 選択してください —</option>';
+  S.authors.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    if (a === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  document.getElementById('fTitle').value = S.articleInfo.title;
+  document.getElementById('fDate').value  = S.articleInfo.date;
+  document.getElementById('fUrl').value   = S.articleInfo.url;
+}
+
+/* 進捗バー */
+function renderProgress() {
+  const { total, done, remaining, pct } = calcProgress();
+  document.getElementById('progCount').textContent = `${done}/${total}`;
+  document.getElementById('progRem').textContent   = `残り${remaining}件`;
+  document.getElementById('progBar').style.width   = `${pct}%`;
+}
+
+/* チェックリスト */
+function renderChecklist() {
+  const wrap = document.getElementById('checklistWrap');
+  wrap.innerHTML = '';
+
+  S.categories.forEach(cat => {
+    const catItems = S.items.filter(i => i.catId === cat.id);
+    const catDone  = catItems.filter(i => S.checkStates[i.id] === 'ok' || S.checkStates[i.id] === 'na').length;
+    const isOpen   = S.openCats.has(cat.id);
+
+    const block = document.createElement('div');
+    block.className = 'cat-block';
+
+    /* カテゴリヘッダー */
+    const hdr = document.createElement('div');
+    hdr.className = 'cat-header';
+    hdr.onclick = () => toggleCat(cat.id);
+
+    let hdrHtml = `
+      <span class="cat-badge" style="background:${cat.color}">${esc(cat.id)}</span>
+      <span class="cat-name">${esc(cat.name)}</span>
+      <span class="cat-prog">${catDone}/${catItems.length}</span>`;
+
+    if (S.isAdmin) {
+      hdrHtml += `
+        <button class="btn-sm" style="margin-left:4px" onclick="event.stopPropagation();adminEditCat('${cat.id}')">編集</button>
+        <button class="btn-sm danger" onclick="event.stopPropagation();adminDelCat('${cat.id}')">削除</button>`;
+    }
+    hdrHtml += `<span class="cat-arrow ${isOpen ? 'open' : ''}">▼</span>`;
+    hdr.innerHTML = hdrHtml;
+
+    /* 項目リスト */
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'cat-items';
+    if (!isOpen) itemsWrap.classList.add('hidden');
+
+    catItems.forEach(item => itemsWrap.appendChild(makeItemRow(item)));
+
+    /* 管理者：項目追加ボタン */
+    if (S.isAdmin) {
+      const addRow = document.createElement('div');
+      addRow.style.cssText = 'padding:10px 16px; border-top:1px dashed #e0e0e0;';
+      addRow.innerHTML = `<button class="btn-primary" style="font-size:12px;padding:5px 12px"
+        onclick="adminAddItem('${cat.id}')">＋ 項目を追加</button>`;
+      itemsWrap.appendChild(addRow);
+    }
+
+    block.appendChild(hdr);
+    block.appendChild(itemsWrap);
+    wrap.appendChild(block);
+  });
+
+  /* 管理者：カテゴリ追加ボタン */
+  if (S.isAdmin) {
+    const addCatBtn = document.createElement('div');
+    addCatBtn.style.cssText = 'text-align:center; padding:6px 0;';
+    addCatBtn.innerHTML = `<button class="btn-primary" onclick="openAdmin();switchTab('categories')">＋ カテゴリを追加</button>`;
+    wrap.appendChild(addCatBtn);
+  }
+}
+
+/* 項目行を生成して返す */
+function makeItemRow(item) {
+  const cs   = S.checkStates[item.id];
+  const memo = S.memos[item.id] || '';
+
+  const row = document.createElement('div');
+  row.className = `item-row ${cs || ''}`;
+
+  /* メイン行 */
+  let html = `
+    <div class="item-main">
+      <span class="item-num">${esc(item.id)}</span>
+      <span class="item-text">${esc(item.text)}</span>
+      <div class="item-controls">
+        <label class="ok-label">
+          <input type="checkbox" ${cs==='ok'?'checked':''} onchange="onOK('${item.id}',this.checked)"> OK
+        </label>
+        <button class="na-btn ${cs==='na'?'active':''}" onclick="onNA('${item.id}')">N/A</button>
+      </div>
+    </div>`;
+
+  /* OK時：申し送りメモ欄 */
+  if (cs === 'ok') {
+    html += `
+      <div class="item-memo">
+        <div class="memo-label">申し送りメモ（任意）</div>
+        <textarea placeholder="レビュワーへのメモを入力..."
+          onchange="onMemo('${item.id}',this.value)">${esc(memo)}</textarea>
+      </div>`;
+  }
+
+  /* 管理者：編集・削除ボタン */
+  if (S.isAdmin) {
+    html += `
+      <div class="item-admin-bar">
+        <button class="btn-sm" onclick="adminEditItem('${item.id}')">編集</button>
+        <button class="btn-sm danger" onclick="adminDelItem('${item.id}')">削除</button>
+      </div>`;
+  }
+
+  row.innerHTML = html;
+  return row;
+}
+
+/* 送信ボタンの活性状態を更新 */
+function renderSubmitBtn() {
+  document.getElementById('submitBtn').classList.toggle('ready', isAllDone());
+}
+
+/* ──────────────────────────────────────────
+   チェック操作
+────────────────────────────────────────── */
+function toggleCat(catId) {
+  S.openCats.has(catId) ? S.openCats.delete(catId) : S.openCats.add(catId);
+  renderChecklist();
+}
+
+function onOK(itemId, checked) {
+  if (checked) S.checkStates[itemId] = 'ok';
+  else delete S.checkStates[itemId];
+  saveCheckStates();
+  refreshUI();
+}
+
+function onNA(itemId) {
+  if (S.checkStates[itemId] === 'na') {
+    delete S.checkStates[itemId];
+  } else {
+    S.checkStates[itemId] = 'na';
+    delete S.memos[itemId];
+    saveMemos();
+  }
+  saveCheckStates();
+  refreshUI();
+}
+
+function onMemo(itemId, val) {
+  S.memos[itemId] = val;
+  saveMemos();
+}
+
+function refreshUI() {
+  renderChecklist();
+  renderProgress();
+  renderSubmitBtn();
+}
+
+/* ──────────────────────────────────────────
+   送信処理
+────────────────────────────────────────── */
+function handleSubmit() {
+  if (!isAllDone()) return;
+
+  /* 提出データを組み立て */
+  const record = {
+    id:           Date.now(),
+    submittedAt:  new Date().toISOString(),
+    articleTitle: S.articleInfo.title,
+    author:       S.articleInfo.author,
+    date:         S.articleInfo.date,
+    url:          S.articleInfo.url,
+    checkStates:  { ...S.checkStates },
+    memos:        { ...S.memos },
+    items:        S.items.map(i => ({ id: i.id, text: i.text })),
+  };
+
+  /* localStorageの履歴に追記 */
+  const hist = lsGet(SK.history, []);
+  hist.push(record);
+  lsSet(SK.history, hist);
+
+  /* Google Apps Script経由でスプレッドシートに送信 */
+  sendToGoogleScript(record);
+
+  showToast('提出しました！レビュワーに確認を依頼してください。');
+
+  /* 全フィールドをリセット */
+  S.checkStates = {};
+  S.memos       = {};
+  S.articleInfo = { title:'', author:'', date:'', url:'' };
+  saveCheckStates();
+  saveMemos();
+  lsSet(SK.articleInfo, S.articleInfo);
+  render();
+}
+
+/**
+ * Google Apps Script Web App に POST してスプレッドシートに記録する。
+ * SCRIPT_URL が空の場合は何もしない（localStorage保存のみ）。
+ * no-cors モードで送信するためレスポンスは読めないが、データは届く。
+ */
+function sendToGoogleScript(record) {
+  if (!SCRIPT_URL) return;
+  fetch(SCRIPT_URL, {
+    method:  'POST',
+    mode:    'no-cors',  // Apps ScriptはCORSヘッダーを返さないためno-cors
+    headers: { 'Content-Type': 'text/plain' },  // プリフライトなしのシンプルリクエスト
+    body:    JSON.stringify(record),
+  }).catch(err => console.warn('スプレッドシート送信エラー:', err));
+}
+
+/**
+ * 管理者が変更した authors/categories/items をサーバーに保存する。
+ * 他ユーザーは次回ページ読み込み時にこの設定を取得する。
+ */
+function pushConfigToServer() {
+  if (!SCRIPT_URL) return;
+  fetch(SCRIPT_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify({
+      type:       'config',
+      authors:    S.authors,
+      categories: S.categories,
+      items:      S.items,
+    }),
+  }).catch(err => console.warn('設定の同期エラー:', err));
+}
+
+/**
+ * ページ読み込み時にサーバーから最新の設定を取得して反映する。
+ * SCRIPT_URL 未設定時やネットワークエラー時は localStorage のまま動作する。
+ */
+async function fetchConfigFromServer() {
+  if (!SCRIPT_URL) return;
+  try {
+    const res  = await fetch(SCRIPT_URL + '?type=config', { cache: 'no-store' });
+    const data = await res.json();
+    if (data.authors && data.categories && data.items) {
+      S.authors    = data.authors;
+      S.categories = data.categories;
+      S.items      = data.items;
+      S.categories.forEach(c => S.openCats.add(c.id));
+      lsSet(SK.authors,    S.authors);
+      lsSet(SK.categories, S.categories);
+      lsSet(SK.items,      S.items);
+      render();
+    }
+  } catch (e) {
+    /* オフライン or URL未設定 → localStorage のまま継続 */
+  }
+}
+
+/* ──────────────────────────────────────────
+   管理者モード
+────────────────────────────────────────── */
+function openAdmin() {
+  if (S.isAdmin) {
+    showAdminPanel();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('pwInput').value = '';
+    document.getElementById('loginErr').classList.add('hidden');
+    setTimeout(() => document.getElementById('pwInput').focus(), 60);
+  }
+}
+
+function closeLogin() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+function tryLogin() {
+  if (document.getElementById('pwInput').value === ADMIN_PW) {
+    S.isAdmin = true;
+    closeLogin();
+    const btn = document.getElementById('adminBtn');
+    btn.classList.add('active');
+    btn.textContent = '⚙ 管理者（ログイン中）';
+    showAdminPanel();
+    renderChecklist();
+  } else {
+    document.getElementById('loginErr').classList.remove('hidden');
+    document.getElementById('pwInput').select();
+  }
+}
+
+function showAdminPanel() {
+  document.getElementById('adminOverlay').classList.remove('hidden');
+  switchTab(S.activeTab);
+}
+
+function closeAdmin() {
+  document.getElementById('adminOverlay').classList.add('hidden');
+}
+
+function doLogout() {
+  S.isAdmin = false;
+  const btn = document.getElementById('adminBtn');
+  btn.classList.remove('active');
+  btn.textContent = '⚙ 管理者';
+  closeAdmin();
+  renderChecklist();
+}
+
+/* ──────────────────────────────────────────
+   管理者タブ切り替え
+────────────────────────────────────────── */
+function switchTab(name) {
+  S.activeTab = name;
+  ['authors','categories','items','history','settings'].forEach(t => {
+    document.getElementById(`tb-${t}`).classList.toggle('active', t === name);
+    document.getElementById(`tc-${t}`).classList.toggle('hidden',  t !== name);
+  });
+  renderTab(name);
+}
+
+function renderTab(name) {
+  switch(name) {
+    case 'authors':    renderTabAuthors();    break;
+    case 'categories': renderTabCategories(); break;
+    case 'items':      renderTabItems();      break;
+    case 'history':    renderTabHistory();    break;
+    case 'settings':   renderTabSettings();   break;
+  }
+}
+
+/* ── 執筆者タブ ── */
+function renderTabAuthors() {
+  const el = document.getElementById('tc-authors');
+  let h = '';
+  S.authors.forEach((a, i) => {
+    h += `<div class="list-row">
+      <span class="list-row-text">${esc(a)}</span>
+      <button class="btn-sm danger" onclick="authDel(${i})">削除</button>
+    </div>`;
+  });
+  h += `<div class="add-group">
+    <input type="text" id="newAuthor" placeholder="新しい執筆者名" onkeydown="if(event.key==='Enter')authAdd()">
+    <button class="btn-primary" onclick="authAdd()">追加</button>
+  </div>`;
+  el.innerHTML = h;
+}
+
+function authAdd() {
+  const inp = document.getElementById('newAuthor');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (S.authors.includes(name)) { showToast('同じ名前が既に存在します'); return; }
+  S.authors.push(name);
+  saveAuthors();
+  inp.value = '';
+  renderTabAuthors();
+  renderArticleForm();
+}
+
+function authDel(i) {
+  if (!confirm(`「${S.authors[i]}」を削除しますか？`)) return;
+  S.authors.splice(i, 1);
+  saveAuthors();
+  renderTabAuthors();
+  renderArticleForm();
+}
+
+/* ── カテゴリタブ ── */
+function renderTabCategories() {
+  const el = document.getElementById('tc-categories');
+  let h = '';
+  S.categories.forEach(cat => {
+    h += `<div class="list-row">
+      <span class="cat-badge" style="background:${cat.color};margin-right:6px">${esc(cat.id)}</span>
+      <span class="list-row-text">${esc(cat.name)}</span>
+      <span style="display:inline-block;width:18px;height:18px;border-radius:4px;
+        background:${cat.color};border:1px solid #ccc;flex-shrink:0;margin-right:4px;"></span>
+      <button class="btn-sm" onclick="catEdit('${cat.id}')">編集</button>
+      <button class="btn-sm danger" onclick="adminDelCat('${cat.id}');renderTabCategories()">削除</button>
+    </div>`;
+  });
+
+  h += `<div class="cat-add-form">
+    <div class="form-title">新しいカテゴリを追加</div>
+    <div class="cat-add-grid">
+      <input type="text" id="nCatId"    placeholder="ID (例: H)">
+      <input type="text" id="nCatName"  placeholder="カテゴリ名">
+      <input type="color" id="nCatColor" value="#cccccc">
+      <button class="btn-primary" onclick="catAdd()">追加</button>
+    </div>
+  </div>`;
+  el.innerHTML = h;
+}
+
+function catAdd() {
+  const id    = document.getElementById('nCatId').value.trim().toUpperCase();
+  const name  = document.getElementById('nCatName').value.trim();
+  const color = document.getElementById('nCatColor').value;
+  if (!id || !name) { showToast('IDとカテゴリ名を入力してください'); return; }
+  if (S.categories.find(c => c.id === id)) { showToast('同じIDが既に存在します'); return; }
+  S.categories.push({ id, name, color });
+  saveCategories();
+  S.openCats.add(id);
+  renderTabCategories();
+  renderChecklist();
+}
+
+function catEdit(catId) {
+  const cat = S.categories.find(c => c.id === catId);
+  if (!cat) return;
+  const newName = prompt('カテゴリ名を編集:', cat.name);
+  if (newName === null) return;
+  const newColor = prompt('カラーコード（#xxxxxx）:', cat.color);
+  if (newColor === null) return;
+  if (newName.trim()) cat.name = newName.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(newColor)) cat.color = newColor;
+  saveCategories();
+  renderTabCategories();
+  renderChecklist();
+}
+
+function adminEditCat(catId) { catEdit(catId); }
+
+function adminDelCat(catId) {
+  const cnt = S.items.filter(i => i.catId === catId).length;
+  const msg = cnt > 0
+    ? `カテゴリ「${catId}」とその項目${cnt}件を削除しますか？`
+    : `カテゴリ「${catId}」を削除しますか？`;
+  if (!confirm(msg)) return;
+  S.categories = S.categories.filter(c => c.id !== catId);
+  S.items      = S.items.filter(i => i.catId !== catId);
+  saveCategories(); saveItems();
+  renderChecklist();
+  renderProgress();
+  renderSubmitBtn();
+}
+
+/* ── チェック項目タブ ── */
+function renderTabItems() {
+  const el = document.getElementById('tc-items');
+  let h = '';
+  S.categories.forEach(cat => {
+    const catItems = S.items.filter(i => i.catId === cat.id);
+    h += `<div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;font-weight:700;">
+        <span class="cat-badge" style="background:${cat.color}">${esc(cat.id)}</span>
+        ${esc(cat.name)}
+        <button class="btn-primary" style="font-size:11px;padding:4px 10px;margin-left:auto"
+          onclick="adminAddItem('${cat.id}')">＋ 追加</button>
+      </div>`;
+    catItems.forEach(item => {
+      h += `<div class="list-row">
+        <span style="font-size:11px;font-weight:700;color:#888;min-width:42px">${esc(item.id)}</span>
+        <span class="list-row-text" style="font-size:13px">${esc(item.text)}</span>
+        <button class="btn-sm" onclick="adminEditItem('${item.id}')">編集</button>
+        <button class="btn-sm danger" onclick="adminDelItem('${item.id}')">削除</button>
+      </div>`;
+    });
+    h += '</div>';
+  });
+  el.innerHTML = h;
+}
+
+function adminAddItem(catId) {
+  const text = prompt('項目のテキストを入力:');
+  if (!text || !text.trim()) return;
+
+  /* カテゴリ内の最大連番を求めて +1 */
+  const existing = S.items.filter(i => i.catId === catId);
+  let num = existing.length + 1;
+  let newId = `${catId}-${String(num).padStart(2,'0')}`;
+  while (S.items.find(i => i.id === newId)) {
+    num++;
+    newId = `${catId}-${String(num).padStart(2,'0')}`;
+  }
+
+  S.items.push({ id: newId, catId, text: text.trim() });
+  saveItems();
+  renderTabItems();
+  renderChecklist();
+  renderProgress();
+  renderSubmitBtn();
+}
+
+function adminEditItem(itemId) {
+  const item = S.items.find(i => i.id === itemId);
+  if (!item) return;
+  const newText = prompt('項目テキストを編集:', item.text);
+  if (newText === null || !newText.trim()) return;
+  item.text = newText.trim();
+  saveItems();
+  renderTabItems();
+  renderChecklist();
+}
+
+function adminDelItem(itemId) {
+  if (!confirm(`項目「${itemId}」を削除しますか？`)) return;
+  S.items = S.items.filter(i => i.id !== itemId);
+  delete S.checkStates[itemId];
+  delete S.memos[itemId];
+  saveItems(); saveCheckStates(); saveMemos();
+  renderTabItems();
+  renderChecklist();
+  renderProgress();
+  renderSubmitBtn();
+}
+
+/* ── 提出履歴タブ ── */
+function renderTabHistory() {
+  const el   = document.getElementById('tc-history');
+  const hist = lsGet(SK.history, []);
+
+  if (!hist.length) {
+    el.innerHTML = '<div style="text-align:center;color:#888;padding:28px">提出履歴がありません</div>';
+    return;
+  }
+
+  let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn-sm danger" onclick="clearHistory()">履歴をすべて削除</button>
+  </div>`;
+
+  [...hist].reverse().forEach(rec => {
+    const dt     = new Date(rec.submittedAt).toLocaleString('ja-JP');
+    const memos  = Object.entries(rec.memos || {}).filter(([,v]) => v && v.trim());
+    h += `<div class="history-card">
+      <div class="history-title">${esc(rec.articleTitle || '（タイトルなし）')}</div>
+      <div class="history-meta">
+        <span>執筆者: ${esc(rec.author || '—')}</span>
+        <span>執筆日: ${esc(rec.date || '—')}</span>
+        <span>提出: ${dt}</span>
+      </div>
+      ${rec.url ? `<div style="font-size:12px;color:#888;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">URL: ${esc(rec.url)}</div>` : ''}
+      ${memos.length ? `<div class="history-memo">
+        <div class="history-memo-title">申し送りメモ</div>
+        ${memos.map(([id,v]) => `<div class="history-memo-item"><strong>${esc(id)}:</strong> ${esc(v)}</div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  });
+
+  el.innerHTML = h;
+}
+
+/* ── 設定タブ ── */
+function renderTabSettings() {
+  const el = document.getElementById('tc-settings');
+  el.innerHTML = `
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">Google スプレッドシート連携URL</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+        Apps Script をデプロイして取得した「ウェブアプリのURL」を貼ってください。<br>
+        設定するとチェックリスト提出時にスプレッドシートへ自動記録されます。
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="url" id="scriptUrlInput" value="${esc(SCRIPT_URL)}"
+          placeholder="https://script.google.com/macros/s/..."
+          style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit">
+        <button class="btn-primary" onclick="saveScriptUrl()">保存</button>
+      </div>
+      ${SCRIPT_URL
+        ? `<div style="margin-top:8px;font-size:12px;color:var(--primary)">✓ URL設定済み</div>`
+        : `<div style="margin-top:8px;font-size:12px;color:var(--muted)">未設定（提出はlocalStorageのみに保存）</div>`}
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Apps Script のコード</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+        Googleスプレッドシートの「拡張機能 → Apps Script」を開き、<br>
+        以下のコードを丸ごとコピーして貼り付けてください。
+      </div>
+      <textarea readonly onclick="this.select()"
+        style="width:100%;height:300px;padding:10px;font-size:11px;font-family:monospace;
+               border:1px solid var(--border);border-radius:6px;background:#f9f9f9;
+               resize:none;color:#333;cursor:text"
+      >const SHEET_SUBMISSIONS = '提出履歴';
+const SHEET_CONFIG = 'Config';
+
+// 設定の読み込み（ページ読み込み時に全ユーザーが呼ぶ）
+function doGet(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONFIG);
+    if (!sheet || sheet.getLastRow() === 0) return ok({status:'empty'});
+    return ContentService.createTextOutput(sheet.getRange(1,1).getValue())
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(e) { return ok({status:'error',message:e.message}); }
+}
+
+// 設定の保存 or 提出記録
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (data.type === 'config') {
+      let s = ss.getSheetByName(SHEET_CONFIG) || ss.insertSheet(SHEET_CONFIG);
+      s.getRange(1,1).setValue(JSON.stringify(
+        {authors:data.authors, categories:data.categories, items:data.items}
+      ));
+      return ok({status:'ok'});
+    }
+
+    let s = ss.getSheetByName(SHEET_SUBMISSIONS);
+    if (!s) {
+      s = ss.insertSheet(SHEET_SUBMISSIONS);
+      const h=['提出日時','記事タイトル','執筆者','執筆日','記事URL','N/A項目','申し送りメモ'];
+      s.appendRow(h); s.getRange(1,1,1,h.length).setFontWeight('bold'); s.setFrozenRows(1);
+    }
+    const na = Object.entries(data.checkStates||{})
+      .filter(([,v])=>v==='na').map(([k])=>k).join(', ');
+    const memo = Object.entries(data.memos||{})
+      .filter(([,v])=>v&&v.trim()).map(([k,v])=>'['+k+'] '+v).join('\\n');
+    s.insertRowAfter(1);
+    s.getRange(2,1,1,7).setValues([[new Date(data.submittedAt),data.articleTitle||'',
+      data.author||'',data.date||'',data.url||'',na,memo]]);
+    return ok({status:'ok'});
+  } catch(err) { return ok({status:'error',message:err.message}); }
+}
+
+function ok(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">クリックで全選択されます</div>
+    </div>`;
+}
+
+function saveScriptUrl() {
+  const url = document.getElementById('scriptUrlInput').value.trim();
+  SCRIPT_URL = url;
+  localStorage.setItem('l3_scriptUrl', url);
+  renderTabSettings();
+  showToast(url ? 'URLを保存しました' : 'URLをクリアしました');
+}
+
+function clearHistory() {
+  if (!confirm('提出履歴をすべて削除しますか？')) return;
+  localStorage.removeItem(SK.history);
+  renderTabHistory();
+  showToast('履歴をクリアしました');
+}
+
+/* ──────────────────────────────────────────
+   ユーティリティ
+────────────────────────────────────────── */
+
+/* XSS対策：HTML エスケープ */
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/* トースト通知表示 */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* オーバーレイ外クリックで閉じる */
+document.getElementById('loginOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeLogin();
+});
+document.getElementById('adminOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAdmin();
+});
+
+/* ──────────────────────────────────────────
+   アプリ起動
+────────────────────────────────────────── */
+initState();
+render();
+fetchConfigFromServer(); // サーバーから最新設定を取得（非同期・差分があれば再描画）
+</script>
+</body>
+</html>
+<!--
+════════════════════════════════════════════════════════════
+  Google Apps Script コード（スプレッドシート側に貼るコード）
+  手順:
+    1. Googleスプレッドシートを新規作成
+    2. 拡張機能 → Apps Script
+    3. エディタの中身を全部削除して以下を貼り付け
+    4. 保存（Ctrl+S）
+    5. デプロイ → 新しいデプロイ
+       - 種類: ウェブアプリ
+       - 実行者: 自分（自分のGoogleアカウント）
+       - アクセスできるユーザー: 全員
+    6. 「デプロイ」ボタンを押す
+    7. 表示された「ウェブアプリのURL」をコピー
+    8. このHTMLの先頭付近の SCRIPT_URL = '' にURLを貼る
+════════════════════════════════════════════════════════════
+
+// ─── ここから Apps Script に貼るコード ───
+
+const SHEET_NAME = '提出履歴';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss   = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet  = ss.getSheetByName(SHEET_NAME);
+
+    // シートがなければ作成してヘッダーを追加
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      const headers = ['提出日時','記事タイトル','執筆者','執筆日','記事URL','N/A項目','申し送りメモ'];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+      sheet.setFrozenRows(1);
+    }
+
+    // N/Aになった項目IDを列挙
+    const naItems = Object.entries(data.checkStates || {})
+      .filter(([, v]) => v === 'na')
+      .map(([k]) => k)
+      .join(', ');
+
+    // 申し送りメモをまとめる
+    const memos = Object.entries(data.memos || {})
+      .filter(([, v]) => v && v.trim())
+      .map(([k, v]) => '[' + k + '] ' + v)
+      .join('\n');
+
+    sheet.appendRow([
+      new Date(data.submittedAt),
+      data.articleTitle || '',
+      data.author       || '',
+      data.date         || '',
+      data.url          || '',
+      naItems,
+      memos,
+    ]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ─── ここまで ───
+
+════════════════════════════════════════════════════════════
+-->
